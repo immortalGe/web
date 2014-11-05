@@ -16,7 +16,7 @@ bool sendPacket(drConPacket& packet)
     if (workable())
     {
         mOutStream.position(0);
-        if (packet.put(mOutStream))    ////temporary uninvovled
+        if (packet.put(mOutStream))
         {
             int data_size = mOutStream.getSize();
             const void *buffer = mOutStream.getBuffer();
@@ -196,6 +196,7 @@ bool get(drConTransmitInStream& in)
 */
 
 
+
 drConSessionImpBase --- protecetd: drConTransmitterDiagram mTransmitter; drConTransmitDiagramAddress mScratchAddress; drConPacketClosure mPacketClosure;
 
 drConSessionImpBase(drConTransmitType type, bool server)
@@ -268,5 +269,72 @@ void drConSessionImpBase::discardPackets()
     }
 }
 
-/*ergate
+drConSearchSession --- protected: drConSessionImpBase mImp; drConTransmitDiagramAddress mScratchAddress;
+
+drConSearchSessionImp(drConTransmitType type)
+    : mImp(type, false)
+      , mScratchAddress(drConTransmitterDiagram::kServerPort)
+{
+    drCon::log(__FUNCTION__, "constructing drConSearchSessionImp.");
+}
+void sayHello()
+{
+    if (workable())
+    {
+        mImp.discardPackets();
+        mImp.sendPacket(drConCommandSayHello(), true);
+    }
+}
+bool getHelloAnswer(std::string& who, drConTransmitDiagramAddress& addr)
+{
+    bool bResult = false;
+    drConPacketClosure pkt = mImp.readAnyPacket(mScratchAddress);
+
+    drConCommand* pcmd = pkt.getCommand();
+    if ( pcmd && pcmd->hasType(drCT_ANS_HELLO) )
+    {
+        drConCommandAnsHello * pAnsHello = (drConCommandAnsHello*)pcmd;
+        who = pAnsHello->getName();
+        addr = mScratchAddress;
+        bResult = true;
+    }
+    return bResult;
+}
+
 drConTargetImp --- protected: drConTransmitType mType; string mName; drConTransmitDiagramAddress mAddr;
+
+
+typedef std::vector<drConTargetImp> TTargets
+drConSearcherImp --- private: drConTransmitType mType; bool mNeedStop;
+public:
+virtual bool startSearch(TTargets& tgts, unsigned long msecs);
+{
+    drConSearchSessionImp session(mType);
+
+    std::string who;
+    drConTargetImp target(drTT_DIAGRAM);
+    session.sayHello();
+
+    drTime t_start;
+    mNeedStop = false;
+    tgts.clear();
+    for (int rept = 0; rept < 5; rept++)
+    {
+        if ( mNeedStop || drTime().laterThan(t_start, msecs) )
+            break;
+
+        drConTransmitDiagramAddress addr(drTT_DIAGRAM);
+        if( session.getHelloAnswer(who, addr) )
+        {
+            target = drConTargetImp(who, addr);
+            tgts.push_back(target);
+        }
+    }
+    return !tgts.empty();
+}
+virtual void stopSearch();
+{
+    mNeedStop = true;
+}
+
+
