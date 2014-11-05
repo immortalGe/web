@@ -1,0 +1,23 @@
+父进程中调用fork之前打开的所有描述字在fork之后都是共享的。
+两个典型应用：
+1.为自己创建一个拷贝；
+2.一个程序想执行其他程序；
+
+当访问计数变为0时，才发送FIN分节；
+
+
+int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+
+子进程从父进程的存储映像拷贝开始执行
+第二个方法总是将某个描述字设定成已连接套接字。  ？
+
+
+客户接收到三路握手的第二个分节时，connect返回；而服务器直到接收第三个分节才返回；
+
+服务器子进程在结束时给父进程发送了SIGCHLD信号。我们的代码并未捕获，这个信号的缺省动作是忽略。
+
+Ch5.9
+
+Ch5.12
+
